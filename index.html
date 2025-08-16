@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mission Chromosome 21</title>
+    <style>
+      /* ---------------- THEME & LAYOUT ---------------- */
+      :root {
+        --bg1: #0a1a2f;
+        --bg2: #123456;
+        --mint: #00e676;
+        --mint2: #00ff90;
+        --pink: #ff4081;
+        --pink2: #ff80ab;
+        --text: #e0f7fa;
+        --note: #ffd54f;
+        --panel: #0a1a2ff2;
+        --glow: #00ff90;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: linear-gradient(to bottom, var(--bg1), var(--bg2));
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* screen container */
+      .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--panel);
+        padding: 20px;
+      }
+      .hidden {
+        display: none !important;
+      }
+      h1,
+      h2 {
+        margin: 8px 0 6px;
+        text-align: center;
+      }
+      .instructions {
+        margin: 8px 0 16px;
+        font-size: 15px;
+        color: var(--note);
+        text-align: center;
+      }
+
+      /* buttons */
+      .btn {
+        padding: 10px 20px;
+        margin: 8px;
+        font-size: 16px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        background: var(--mint);
+        color: #042226;
+        font-weight: 700;
+        box-shadow: 0 0 14px var(--mint);
+      }
+      .btn.secondary {
+        background: #133254;
+        color: var(--text);
+        box-shadow: 0 0 10px #0bb;
+      }
+      .btn.ghost {
+        background: transparent;
+        border: 1px solid #2dd;
+        color: #aff;
+      }
+      .btn.hidden {
+        display: none;
+      }
+
+      /* video full screen */
+      #videoScreen {
+        padding: 0;
+        background: #000;
+      }
+      #introVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      #videoNext {
+        position: absolute;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* stage / petri area */
+      .stage {
+        width: min(92vw, 980px);
+        height: min(58vh, 560px);
+        min-height: 380px;
+        background: radial-gradient(
+          circle at 50% 45%,
+          #001f3f 30%,
+          #0a1a2f 100%
+        );
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 26px var(--glow), inset 0 0 36px #001a33;
+        border: 1px solid #123;
+        margin-top: 10px;
+      }
+
+      /* petri bowl */
+      .petri {
+        position: absolute;
+        inset: 22px;
+        border-radius: 999px;
+        background: radial-gradient(80% 80% at 50% 40%, #0c2b4f88, #0a1a2f 70%),
+          radial-gradient(120% 120% at 30% 10%, #0ff2, transparent 60%),
+          radial-gradient(120% 120% at 70% 90%, #0ff1, transparent 60%);
+        border: 6px solid #7dd3fc22;
+        box-shadow: inset 0 0 18px #7dd3fc22, 0 0 10px #7dd3fc22;
+      }
+
+      /* chromosome X style */
+      .chromosome {
+        position: absolute;
+        width: 42px;
+        height: 42px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+        transition: filter 0.18s, transform 0.12s, opacity 0.2s;
+      }
+      .chromosome::before,
+      .chromosome::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 10px;
+        height: 58px;
+        border-radius: 10px;
+        background: linear-gradient(#eef, #8df);
+        box-shadow: 0 0 10px #8df8;
+        transform-origin: center;
+      }
+      .chromosome::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+      .chromosome::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
+
+      /* affected small marker & subtle asymmetry */
+      .chromosome.affecte {
+        --rot: 8deg;
+      }
+      .chromosome.affecte::before {
+        height: 64px;
+        background: linear-gradient(#eef, #aef);
+      }
+      .chromosome.affecte::after {
+        height: 54px;
+        background: linear-gradient(#eef, #7cf);
+      }
+      .chromosome .marker {
+        position: absolute;
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: var(--pink);
+        box-shadow: 0 0 8px var(--pink2);
+        right: -2px;
+        top: 8px;
+        opacity: 0.95;
+      }
+      .chromosome.selected {
+        filter: drop-shadow(0 0 12px var(--pink2));
+        transform: scale(1.06);
+      }
+
+      /* counter */
+      #counter {
+        position: absolute;
+        top: 12px;
+        left: 14px;
+        font-size: 16px;
+        color: var(--mint2);
+        background: #001a2b99;
+        padding: 6px 10px;
+        border-radius: 10px;
+        border: 1px solid #094;
+        z-index: 12;
+      }
+
+      /* scissors tool */
+      #ciseaux {
+        position: fixed;
+        width: 64px;
+        height: 64px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 44px;
+        line-height: 1;
+        filter: drop-shadow(0 0 6px #fff);
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      /* split halves */
+      .half {
+        position: absolute;
+        width: 40px;
+        height: 20px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      /* CRISPR sequence panel */
+      .panel {
+        width: min(92vw, 980px);
+        border-radius: 12px;
+        padding: 10px;
+        margin-top: 10px;
+      }
+      .dna {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        padding: 16px 12px;
+        background: linear-gradient(180deg, #0f2a4f 0%, #0c203d 100%);
+        border: 1px solid #1d3d66;
+        box-shadow: inset 0 0 18px #061a33;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .seq {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        font-size: 20px;
+        letter-spacing: 1px;
+        justify-content: center;
+        user-select: none;
+      }
+      .base {
+        padding: 4px 6px;
+        border-radius: 6px;
+        background: #0a1f39;
+        border: 1px solid #1b3d66;
+        color: #cbe9ff;
+        cursor: pointer;
+      }
+      .base.pam {
+        background: #0a1f39;
+        border-color: #1b3d66;
+        color: #cbe9ff;
+      }
+      .base.cuttable {
+        outline: 2px dashed rgba(255, 255, 255, 0.08);
+      }
+      .cutMark {
+        position: absolute;
+        top: 8px;
+        bottom: 8px;
+        width: 3px;
+        background: #ffb3c1;
+        left: 50%;
+        display: none;
+        box-shadow: 0 0 10px #ff6b81;
+        pointer-events: none;
+      }
+      .scanner {
+        position: absolute;
+        left: -20%;
+        width: 20%;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          #00fff580 50%,
+          transparent
+        );
+        animation: scan 2.4s linear infinite;
+        pointer-events: none;
+      }
+      @keyframes scan {
+        from {
+          left: -20%;
+        }
+        to {
+          left: 100%;
+        }
+      }
+
+      /* flow buttons */
+      .flow {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+      }
+      .note {
+        margin-top: 6px;
+        text-align: center;
+        color: #9fd;
+      }
+
+      /* small responsive tweaks */
+      @media (max-width: 640px) {
+        .seq {
+          font-size: 18px;
+          gap: 4px;
+        }
+        .btn {
+          font-size: 15px;
+          padding: 10px 16px;
+        }
+        #ciseaux {
+          width: 56px;
+          height: 56px;
+          font-size: 36px;
+        }
+      }
+
+    #btnSkipVideo {
+      position: absolute;
+      bottom: 20px;   /* distance depuis le bas */
+      right: 20px;    /* distance depuis la droite */
+      z-index: 10;    /* pour qu’il soit au-dessus de la vidéo */
+    }
+    #videoScreen {
+      position: relative; /* nécessaire pour que le bouton se place par rapport à la section */
+    }
+  </style>
+</head>
+
+    </style>
+  </head>
+  <body>
+    <!-- START -->
+    <section id="startScreen" class="screen">
+      <h1>Mission Chromosome 21</h1>
+    
+      <button id="startBtn" class="btn">Commencer</button>
+    </section>
+
+    <!-- INTRO -->
+    <section id="introScreen" class="screen hidden">
+      <h2>Bienvenue dans le laboratoire virtuel</h2>
+      
+      <button id="introNext" class="btn">Suivant</button>
+    </section>
+
+    <!-- VIDEO (plein écran) -->
+    <section
+      id="videoScreen"
+      class="screen hidden"
+      style="flex-direction: column; padding: 0"
+    >
+      <video
+        id="introVideo"
+        playsinline
+        preload="auto"
+        poster=""
+        style="background: #000"
+      >
+        <source src="RPReplay_Final1755373805 (1).mp4" type="video/mp4" />
+        <!-- si pas de video fournie, l'élément reste vide -->
+      </video>
+      <button id="videoNext" class="btn hidden">Jouer</button>
+      <button id="videoSkip"class="btn secondary">passer la video </button>
+</section>
+    </section>
+
+    <!-- PETRI : sélection -->
+    <section id="petriScreen" class="screen hidden">
+      <h2>Étape 1 — Observation</h2>
+      <div class="instructions">
+        Sélectionne discrètement les <strong>3</strong> chromosomes 21 (marqueur
+        rose). Si tu te trompes, tu perds.
+      </div>
+      <div id="counter">0 / 3</div>
+      <div class="stage" id="petriStage">
+        <div id="petri" class="petri">
+          <div class="hint">Astuce : les 21 ont un petit marqueur rose…</div>
+        </div>
+      </div>
+      <button id="petriNext" class="btn hidden">
+        Passer à l’édition CRISPR
+      </button>
+    </section>
+
+    <!-- CRISPR -->
+    <section id="crisprScreen" class="screen hidden">
+      <h2>Étape 2 — Ciblage CRISPR-Cas9</h2>
+      <div class="instructions">
+        1) Arme Cas9 → 2) Clique sur l'emplacement de la coupure (tu dois
+        cliquer **exactement** à 3 bases avant le PAM <code>AGG</code>) → 3)
+        Choisis NHEJ ou HDR.
+      </div>
+
+      <div class="panel">
+        <div class="dna">
+          <div class="scanner"></div>
+          <div id="cutMark" class="cutMark"></div>
+          <div id="seq" class="seq" aria-hidden="false"></div>
+        </div>
+
+        <div class="flow">
+          <button id="armBtn" class="btn">Armer Cas9</button>
+          <button id="cutBtn" class="btn secondary" disabled>
+            Positionner la coupure
+          </button>
+          <button id="nhejBtn" class="btn ghost" disabled>
+            NHEJ (Δ indel)
+          </button>
+          <button id="hdrBtn" class="btn ghost" disabled>HDR (AGG→AGC)</button>
+          <button id="toCutBtn" class="btn hidden">Passer à la découpe</button>
+        </div>
+
+        <div id="crisprNote" class="note">
+          Cas9 + gRNA scannent l’ADN → cherchez la PAM <code>NGG</code> à côté
+          de la cible.
+        </div>
+      </div>
+    </section>
+
+    <!-- CUT (microscope + ciseaux) -->
+    <section id="cutScreen" class="screen hidden">
+      <h2>Étape 3 — Découpe</h2>
+      <div class="instructions">
+        Fais glisser les ✂️ (ils suivent ta souris / ton doigt). Clique/touche
+        pour couper le chromosome affiché. Répète pour les 3 cibles.
+      </div>
+      <div class="stage" id="cutStage">
+        <div id="cutArea" class="petri"></div>
+        <div id="ciseaux">✂️</div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="resultScreen" class="screen hidden">
+      <h2 id="resultText">Résultat</h2>
+      <div class="instructions" id="resultDetail"></div>
+      <button id="restartBtn" class="btn">Rejouer</button>
+    </section>
+<body>
+  <!-- tout ton contenu HTML -->
+  
+  <script src="script.js"></script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+
+    <script>
+      /* ===================== VARIABLES / DOM ===================== */
+      const startScreen = document.getElementById("startScreen");
+      const introScreen = document.getElementById("introScreen");
+      const videoScreen = document.getElementById("videoScreen");
+      const petriScreen = document.getElementById("petriScreen");
+      const crisprScreen = document.getElementById("crisprScreen");
+      const cutScreen = document.getElementById("cutScreen");
+     
+      const startBtn = document.getElementById("startBtn");
+      const introNext = document.getElementById("introNext");
+      const introVideo = document.getElementById("introVideo");
+      const videoNext = document.getElementById("videoNext");
+      const videoSkip = document.getElementById('videoSkip');
+      videoSkip.addEventListener('click', () => {
+  // cacher la vidéo et passer directement à la pétri
+  introVideo.pause();
+  show(petriScreen); // ou la fonction qui montre l'étape suivante
+});
+
+
+
+      const petri = document.getElementById("petri");
+      const petriNext = document.getElementById("petriNext");
+      const counter = document.getElementById("counter");
+
+      const seqEl = document.getElementById("seq");
+      const cutMark = document.getElementById("cutMark");
+      const armBtn = document.getElementById("armBtn");
+      const cutBtn = document.getElementById("cutBtn");
+      const nhejBtn = document.getElementById("nhejBtn");
+      const hdrBtn = document.getElementById("hdrBtn");
+      const toCutBtn = document.getElementById("toCutBtn");
+      const crisprNote = document.getElementById("crisprNote");
+
+      const cutArea = document.getElementById("cutArea");
+      const ciseaux = document.getElementById("ciseaux");
+      
+      const resultScreen = document.getElementById("resultScreen");
+ const resultText = document.getElementById("resultText");
+      const resultDetail = document.getElementById("resultDetail");
+      const restartBtn = document.getElementById("restartBtn");
+restartBtn.addEventListener('click', () => {
+  resetAll();        // réinitialise toutes les variables du jeu
+  show(introScreen); // retourne à l'écran de démarrage
+});
+
+function showSuccess(){
+  resultText.textContent = "Bravo ! Les chromosomes ciblés ont été réparés 🎉";
+  resultDetail.textContent = "Tu as correctement sélectionné et traité les chromosomes 21. Tu peux rejouer ou fermer.";
+ resultScreen.classList.remove('hidden');
+}
+
+function showFailure(message){
+  resultText.textContent = "Échec";
+  resultDetail.textContent = message || "Tu as fait une erreur — recommence.";
+  resultScreen.classList.remove('hidden');
+}
+
+// bouton Rejouer
+restartBtn.addEventListener('click', ()=>{
+  resultScreen.classList.add('hidden'); // cache le résultat
+  resetAll();                            // réinitialise tout le jeu
+  show(introScreen);                     // retourne à l'intro
+});
+
+
+
+
+      const TOTAL_TARGETS = 3; // nombre de chromosomes 21 à trouver / réparer
+
+      // État du jeu
+      let videoPlayedOnce = false;
+      let allChromosomes = []; // éléments visibles dans la pétri
+      let selectedTargets = []; // éléments choisis (DOM references)
+      let selectedCount = 0;
+      let currentTargetIndex = 0; // cible courante (0..TOTAL_TARGETS-1)
+      let armReady = false;
+      let cutDone = false;
+      let repairChoice = null;
+      let pamIndexGlobal = null; // index du PAM (dans la séquence affichée)
+      let cutIndexGlobal = null; // position choisie par l'utilisateur (index d'une base)
+      let scissorsActive = false;
+
+      /* ===================== NAVIGATION helper ===================== */
+      function show(screen) {
+        [
+          startScreen,
+          introScreen,
+          videoScreen,
+          petriScreen,
+          crisprScreen,
+          cutScreen,
+          resultScreen,
+        ].forEach((s) => s.classList.add("hidden"));
+        screen.classList.remove("hidden");
+        window.scrollTo(0, 0);
+      }
+
+      /* ===================== START / INTRO / VIDEO ===================== */
+      startBtn.onclick = () => show(introScreen);
+
+      introNext.onclick = () => {
+        if (videoPlayedOnce) {
+          show(petriScreen);
+          buildPetri();
+        } else {
+          show(videoScreen);
+          // tenter de jouer (autoplay peut être bloqué)
+          introVideo.play().catch(() => {
+            /* si bloqué on laisse le bouton pour lancer */ videoNext.classList.remove(
+              "hidden"
+            );
+          });
+          // si la vidéo ne contient aucune source, on affiche directement jouer
+          if (!introVideo.querySelector("source"))
+            videoNext.classList.remove("hidden");
+        }
+      };
+
+      introVideo.addEventListener("ended", () => {
+        videoPlayedOnce = true;
+        // Affiche toujours le bouton JOUER à la fin, même si autoplay n'a pas fonctionné
+        videoNext.style.display = "block";
+        videoNext.classList.remove("hidden");
+  videoSkip.style.display = 'none';
+}
+
+      );
+
+      videoNext.addEventListener("click", () => {
+        videoPlayedOnce = true;
+        show(petriScreen);
+        buildPetri();
+      });
+      videoSkip.addEventListener('click', () => {
+  videoPlayedOnce = true;          // considère la vidéo comme déjà vue
+  show(petriScreen);               // passe directement à la pétri
+  buildPetri();
+});
+
+
+      /* ===================== PETRI (Sélection) ===================== */
+      function buildPetri() {
+        // reset état
+        petri.innerHTML =
+          '<div class="hint">Astuce : les 21 ont un petit marqueur rose…</div>';
+        allChromosomes = [];
+        selectedTargets = [];
+        selectedCount = 0;
+        currentTargetIndex = 0;
+        counter.textContent = `0 / ${TOTAL_TARGETS}`;
+        petriNext.classList.add("hidden");
+
+        const total = 18; // éléments dans la pétri (mix)
+        // choisis aléatoirement TOTAL_TARGETS indices qui seront les 21
+        const indices = Array.from({ length: total }, (_, i) => i);
+        indices.sort(() => Math.random() - 0.5);
+        const targetSet = new Set(indices.slice(0, TOTAL_TARGETS));
+
+        // dimensions de la zone
+        const rect = petri.getBoundingClientRect();
+        const w = rect.width || 640;
+        const h = rect.height || 420;
+
+        for (let i = 0; i < total; i++) {
+          const el = document.createElement("div");
+          el.className = "chromosome";
+          const x = 12 + Math.random() * (w - 24);
+          const y = 12 + Math.random() * (h - 24);
+          el.style.left = x + "px";
+          el.style.top = y + "px";
+          el.style.setProperty(
+            "--rot",
+            Math.floor(Math.random() * 360) + "deg"
+          );
+
+          const isTarget = targetSet.has(i);
+          el.dataset.is21 = isTarget ? "true" : "false";
+          if (isTarget) {
+            el.classList.add("affecte");
+            const m = document.createElement("span");
+            m.className = "marker";
+            el.appendChild(m);
+          }
+
+          el.addEventListener("click", () => {
+            if (el.classList.contains("selected")) return;
+            if (el.dataset.is21 === "true") {
+              el.classList.add("selected");
+              selectedTargets.push(el);
+              selectedCount++;
+              counter.textContent = `${selectedCount} / ${TOTAL_TARGETS}`;
+              if (selectedCount === TOTAL_TARGETS) {
+                petriNext.classList.remove("hidden");
+              }
+            } else {
+              // mauvais choix => échec général
+              showFailure(
+                "Mauvaise sélection : vous avez choisi un chromosome non affecté. Recommence le jeu."
+              );
+            }
+          });
+
+          allChromosomes.push(el);
+          petri.appendChild(el);
+        }
+      }
+
+      petriNext.addEventListener("click", () => {
+        // move to CRISPR stage for first selected target
+        currentTargetIndex = 0;
+        startCrisprForCurrent();
+      });
+
+      /* ===================== CRISPR: sequence rendering + interactions ===================== */
+      /*
+       Flow:
+       - afficher une séquence avec un PAM "AGG"
+       - armBtn -> active cutBtn
+       - cutBtn -> permet de pointer/clicker une base comme position de coupure
+       - validation: la position correcte = pamIndex - 3 (exactement)
+       - si bonne position -> activer NHEJ/HDR
+       - choix NHEJ/HDR -> simulate visuel / enable toCutBtn
+      */
+
+      const sampleSeqArray = [..."ACGTCTAGCTGATCCTAGGGCTATCAGT"]; // contient "AGG" en "...TAGGG..."
+      function renderSequence(seqArr) {
+        seqEl.innerHTML = "";
+        const seqStr = seqArr.join("");
+        const pamIndex = seqStr.indexOf("AGG"); // index du premier 'A' du "AGG"
+        pamIndexGlobal = pamIndex; // sauvegarde
+        seqArr.forEach((b, i) => {
+          const sp = document.createElement("span");
+          sp.className = "base";
+          sp.textContent = b;
+          sp.dataset.index = i;
+          if (i === pamIndex || i === pamIndex + 1 || i === pamIndex + 2) {
+            sp.classList.add("pam");
+          }
+          // si cut mode activé, ces bases seront cliquables — gestion activée via cutMode flag
+          seqEl.appendChild(sp);
+        });
+        // position visuelle du cutMark (3 bases avant PAM)
+        if (pamIndex >= 3) {
+          const bases = seqEl.querySelectorAll(".base");
+          const ref = bases[pamIndex - 3];
+          cutMark.style.left = ref.offsetLeft + ref.offsetWidth / 2 + "px";
+        } else {
+          cutMark.style.left = "50%";
+        }
+      }
+
+      // state: buttons enabling
+      function setCrisprButtons({
+        arm = true,
+        cut = false,
+        nhej = false,
+        hdr = false,
+        toCut = false,
+      }) {
+        armBtn.disabled = !arm;
+        cutBtn.disabled = !cut;
+        nhejBtn.disabled = !nhej;
+        hdrBtn.disabled = !hdr;
+        toCutBtn.classList.toggle("hidden", !toCut);
+      }
+
+      /* start CRISPR for current target */
+      function startCrisprForCurrent() {
+        show(crisprScreen);
+        renderSequence(sampleSeqArray.slice()); // clone
+        cutMark.style.display = "none";
+        armReady = false;
+        cutDone = false;
+        repairChoice = null;
+        cutIndexGlobal = null;
+        crisprNote.textContent =
+          "Cas9 + gRNA scannent l'ADN — arme Cas9 pour activer la coupe.";
+        setCrisprButtons({
+          arm: true,
+          cut: false,
+          nhej: false,
+          hdr: false,
+          toCut: false,
+        });
+        // remove previous click listeners on bases
+        Array.from(seqEl.querySelectorAll(".base")).forEach((b) =>
+          b.classList.remove("cuttable")
+        );
+      }
+
+      /* ARM */
+      armBtn.addEventListener("click", () => {
+        armReady = true;
+        crisprNote.textContent =
+          "Cas9 armé. Trouve la base à couper (3 bases avant le PAM).";
+        setCrisprButtons({
+          arm: false,
+          cut: true,
+          nhej: false,
+          hdr: false,
+          toCut: false,
+        });
+        // highlight cuttable positions (all bases clickable now)
+        Array.from(seqEl.querySelectorAll(".base")).forEach((b) => {
+          b.classList.add("cuttable");
+        });
+      });
+
+      /* CUT position selection: user must click/tap EXACTLY at pamIndexGlobal - 3 */
+      cutBtn.addEventListener("click", () => {
+        // after pressing "Positionner la coupure", instruct user to click on sequence
+        crisprNote.textContent =
+          "Clique/Touche la base où tu veux couper (doit être 3 bases avant AGG).";
+        // simply ensure bases are clickable; we keep cutBtn enabled so they can choose
+      });
+
+      // Delegate clicks on sequence bases
+      seqEl.addEventListener("click", (ev) => {
+        const target = ev.target;
+        if (!target.classList.contains("base")) return;
+        if (!armReady) {
+          // ignore if not armed
+          // do nothing
+          return;
+        }
+        const idx = Number(target.dataset.index);
+        cutIndexGlobal = idx;
+        // show cutMark on the chosen base position
+        cutMark.style.display = "block";
+        cutMark.style.left = target.offsetLeft + target.offsetWidth / 2 + "px";
+        // validate correctness: must be exactly pamIndexGlobal - 3
+        if (pamIndexGlobal === null) {
+          crisprNote.textContent = "PAM non trouvé (erreur interne).";
+          setCrisprButtons({
+            arm: false,
+            cut: false,
+            nhej: false,
+            hdr: false,
+            toCut: false,
+          });
+          return;
+        }
+        if (idx === pamIndexGlobal - 3) {
+          // correct position
+          cutDone = true;
+          crisprNote.textContent =
+            "Bonne position ! Cassure simulée. Choisis NHEJ ou HDR.";
+          setCrisprButtons({
+            arm: false,
+            cut: false,
+            nhej: true,
+            hdr: true,
+            toCut: false,
+          });
+        } else {
+          // incorrect → fail this CRISPR attempt (restart CRISPR for the same target)
+          crisprNote.textContent =
+            "Mauvais emplacement de coupure — recommence la phase CRISPR pour cette cible.";
+          // small delay then reset CRISPR for same target
+          setTimeout(() => {
+            startCrisprForCurrent();
+          }, 900);
+        }
+      });
+
+      /* NHEJ / HDR choices */
+      nhejBtn.addEventListener("click", () => {
+        if (!cutDone) return;
+        repairChoice = "NHEJ";
+        // visual: append Δ at cut position
+        const delta = document.createElement("span");
+        delta.className = "base";
+        delta.textContent = "Δ";
+        delta.style.background = "#311018";
+        delta.style.borderColor = "#7a2b2b";
+        delta.style.color = "#ffbdbd";
+        seqEl.appendChild(delta);
+        crisprNote.textContent =
+          "NHEJ choisi : réparation 'bricolée' simulée (indel Δ).";
+         showSuccess(); // affiche le message de réussite et le bouton Rejouer
+});
+
+      hdrBtn.addEventListener("click", () => {
+        if (!cutDone) return;
+        repairChoice = "HDR";
+        // visual: replace AGG -> AGC (first occurrence)
+        const bases = Array.from(seqEl.querySelectorAll(".base"));
+        const seqStr = bases.map((b) => b.textContent).join("");
+        const idx = seqStr.indexOf("AGG");
+        if (idx >= 0) {
+          bases[idx + 2].textContent = "C";
+          // style change to show correction
+          bases[idx].style.background =
+            bases[idx + 1].style.background =
+            bases[idx + 2].style.background =
+              "#1b3a2a";
+          bases[idx].style.color =
+            bases[idx + 1].style.color =
+            bases[idx + 2].style.color =
+              "#bfffcf";
+        }
+        crisprNote.textContent =
+          "HDR choisi : simulation de correction (AGG → AGC).";
+         showSuccess(); // affiche le message de réussite et le bouton Rejouer
+});
+
+      /* toCutBtn -> prepare actual cutting stage */
+      toCutBtn.addEventListener("click", () => {
+        // prepare list of clones for cutting stage: we clone selectedTargets into a working array
+        // ensure we have selectedTargets (from petri)
+        show(cutScreen);
+        startCuttingCurrent(); // will set up currentTargetIndex target
+      });
+
+      /* ===================== CUT stage: scissors follow pointer & cut chromosome ===================== */
+
+      /*
+       Behavior required:
+       - scissors element always follows mouse/touch
+       - when user presses (pointerdown) and drags over the displayed chromosome, it splits into two halves
+       - one chromosome at a time (order: first selected, second, third)
+       - after splitting each, return to CRISPR for next target (or to final result if done)
+       - if cut fails (in this implementation: user must perform cut action; wrong cut in CRISPR already handled earlier)
+      */
+
+      function startCuttingCurrent() {
+        // show cut screen already handled by caller
+        cutArea.innerHTML = "";
+        ciseaux.style.display = "flex";
+        scissorsActive = true;
+
+        // clone the current selected target to display here
+        const orig = selectedTargets[currentTargetIndex];
+        // create a visual clone element (do not reuse original, to avoid moving it)
+        const clone = document.createElement("div");
+        clone.className = "chromosome affecte";
+        clone.style.left =
+          60 + Math.random() * (cutArea.clientWidth - 120) + "px";
+        clone.style.top =
+          60 + Math.random() * (cutArea.clientHeight - 120) + "px";
+        clone.style.setProperty(
+          "--rot",
+          Math.floor(Math.random() * 50) - 25 + "deg"
+        );
+        const m = document.createElement("span");
+        m.className = "marker";
+        clone.appendChild(m);
+
+        // Add a small sequence overlay box near clone to remind where user must cut? (optional)
+        // Append to cutArea
+        cutArea.appendChild(clone);
+
+        // State
+        let pointerDown = false;
+        let cutPerformed = false;
+
+        // Pointer listeners (global)
+        function onPointerDown(e) {
+          pointerDown = true;
+        }
+        function onPointerUp(e) {
+          pointerDown = false;
+        }
+        function onPointerMove(e) {
+          const x = e.clientX;
+          const y = e.clientY;
+          // scissors follow pointer
+          ciseaux.style.left = x - 24 + "px";
+          ciseaux.style.top = y - 24 + "px";
+
+          if (!pointerDown || cutPerformed) return;
+          // check if pointer is over clone
+          const r = clone.getBoundingClientRect();
+          if (x > r.left && x < r.right && y > r.top && y < r.bottom) {
+            // perform split
+            cutPerformed = true;
+            splitChromosomeVisual(clone);
+          }
+        }
+
+        // attach
+        window.addEventListener("pointerdown", onPointerDown);
+        window.addEventListener("pointerup", onPointerUp);
+        window.addEventListener("pointermove", onPointerMove, {
+          passive: true,
+        });
+
+        // cleanup and advance handled in splitChromosomeVisual
+      }
+
+      /* Helper: split visual and advance */
+      function splitChromosomeVisual(el) {
+        if (!el || !el.parentNode) return;
+        const rect = el.getBoundingClientRect();
+        const parentRect = el.parentNode.getBoundingClientRect();
+        const baseLeft = rect.left - parentRect.left;
+        const baseTop = rect.top - parentRect.top;
+
+        // create halves
+        const up = document.createElement("div");
+        up.className = "half up";
+        up.style.left = baseLeft + rect.width / 2 + "px";
+        up.style.top = baseTop + rect.height / 2 - 10 + "px";
+        up.style.opacity = "0";
+        up.style.transition = "opacity .25s";
+
+        const down = document.createElement("div");
+        down.className = "half down";
+        down.style.left = baseLeft + rect.width / 2 + "px";
+        down.style.top = baseTop + rect.height / 2 + 10 + "px";
+        down.style.opacity = "0";
+        down.style.transition = "opacity .25s";
+
+        el.parentNode.appendChild(up);
+        el.parentNode.appendChild(down);
+        // remove original
+        el.remove();
+
+        // fade in halves then animate apart
+        requestAnimationFrame(() => {
+          up.style.opacity = "1";
+          down.style.opacity = "1";
+        });
+        up.animate(
+          [
+            { transform: "translate(-50%,-50%)" },
+            { transform: "translate(-50%,-120%)" },
+          ],
+          { duration: 450, fill: "forwards", easing: "ease-out" }
+        );
+        down.animate(
+          [
+            { transform: "translate(-50%,-50%)" },
+            { transform: "translate(-50%,20%)" },
+          ],
+          { duration: 450, fill: "forwards", easing: "ease-out" }
+        );
+
+        // after short delay, advance to next
+        setTimeout(() => {
+          currentTargetIndex++;
+          // hide scissors briefly
+          ciseaux.style.display = "none";
+          scissorsActive = false;
+
+          if (currentTargetIndex < TOTAL_TARGETS) {
+            // go back to CRISPR to set target for next one (as requested)
+            startCrisprForCurrent();
+          } else {
+            // all done -> success
+            showSuccess();
+          }
+        }, 550);
+      }
+
+      /* ===================== RESULTS / FAIL ===================== */
+      function showSuccess() {
+        resultText.textContent =
+          "🎉 Bravo chercheurs ! Les chromosomes ciblés ont été réparés 🎉";
+        resultDetail.textContent =
+          "Tu as correctement sélectionné et traité les chromosomes 21. Tu peux rejouer ou fermer.";
+        resultText.classList.add("result-text-animate"); // animation ajoutée
+        show(resultScreen);
+      }
+
+      function showFailure(message) {
+        resultText.textContent = "Échec";
+        resultDetail.textContent =
+          message || "Tu as fait une erreur — recommence.";
+        resultText.classList.add("result-text-animate"); // animation ajoutée
+        show(resultScreen);
+      }
+
+      /* restart behavior: replay goes to intro and does NOT replay video */
+      restartBtn.addEventListener("click", () => {
+        resetAll();
+        show(introScreen);
+      });
+
+      /* reset utility */
+      function resetAll() {
+        videoPlayedOnce = true; // keep video as already seen so it won't auto-play again on next start
+        allChromosomes = [];
+        selectedTargets = [];
+        selectedCount = 0;
+        currentTargetIndex = 0;
+        armReady = false;
+        cutDone = false;
+        repairChoice = null;
+        pamIndexGlobal = null;
+        cutIndexGlobal = null;
+        // hide cutters
+        ciseaux.style.display = "none";
+      }
+
+      /* ===================== INITIAL SETUP ===================== */
+      show(startScreen);
+
+      /* make scissors follow pointer always (but visible only when active) */
+      window.addEventListener(
+        "pointermove",
+        (e) => {
+          ciseaux.style.left = e.clientX - 24 + "px";
+          ciseaux.style.top = e.clientY - 24 + "px";
+          // show/hide logic managed elsewhere (display toggles)
+        },
+        { passive: true }
+      );
+
+      /* accessibility: allow space/enter to "click" highlighted bases when focused via keyboard */
+      seqEl.addEventListener("keydown", (e) => {
+        if (
+          (e.key === "Enter" || e.key === " ") &&
+          document.activeElement.classList.contains("base")
+        ) {
+          document.activeElement.click();
+        }
+      });
+
+      /* end of script */
+    </script>
+  <!-- Code injected
